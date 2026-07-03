@@ -90,8 +90,13 @@
   .btn-gold:active{transform:scale(0.97); box-shadow:0 4px 14px rgba(201,161,90,0.3);}
 
   /* ---------- Test page ---------- */
+  #view-test.active{
+    display:flex; flex-direction:column;
+    height:100vh; height:100dvh;
+    overflow:hidden;
+  }
   .test-header{
-    position:sticky; top:0; z-index:10;
+    flex:0 0 auto;
     background:var(--parchment); border-bottom:1px solid rgba(27,33,66,0.08);
     padding:16px 20px 12px;
   }
@@ -105,10 +110,15 @@
   .progress-label{
     font-size:12px; color:var(--dusk); font-weight:500; letter-spacing:0.03em;
   }
-  .test-list{ padding:20px 20px 110px; max-width:560px; margin:0 auto; }
+  .test-list{
+    flex:1 1 auto; min-height:0;
+    display:flex; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:20px; box-sizing:border-box;
+  }
   .stmt-card{
     background:#fff; border:1px solid rgba(27,33,66,0.07);
-    border-radius:18px; padding:26px 20px 24px; margin-bottom:16px;
+    border-radius:18px; padding:26px 20px 24px;
+    width:100%; max-width:520px; margin:auto;
   }
   .stmt-text{
     font-size:21px; line-height:1.7; font-weight:600; color:var(--ink);
@@ -153,7 +163,7 @@
     font-size:11px; color:var(--dusk); letter-spacing:0.02em;
   }
   .test-footer{
-    position:fixed; left:0; right:0; bottom:0; z-index:10;
+    flex:0 0 auto;
     background:var(--ink); padding:14px 20px calc(14px + env(safe-area-inset-bottom));
     display:flex; align-items:center; justify-content:center; gap:10px;
   }
