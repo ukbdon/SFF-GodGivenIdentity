@@ -89,6 +89,35 @@
   }
   .btn-gold:active{transform:scale(0.97); box-shadow:0 4px 14px rgba(201,161,90,0.3);}
 
+  .admin-entry{
+    position:fixed; right:14px; bottom:14px;
+    font-size:12px; color:rgba(246,241,231,0.28);
+    padding:8px 10px; letter-spacing:0.05em;
+    z-index:5;
+  }
+  .admin-entry:active{color:rgba(246,241,231,0.5);}
+
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(18,21,43,0.7); z-index:50;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .modal-card{
+    background:var(--parchment); border-radius:18px; padding:28px 24px; width:100%; max-width:360px;
+  }
+  .modal-card h3{ font-size:18px; margin-bottom:16px; font-family:'Noto Serif TC', serif; color:var(--ink); }
+  .modal-input{
+    width:100%; padding:13px 14px; border-radius:10px; border:1px solid rgba(27,33,66,0.18);
+    font-size:15px; font-family:inherit; margin-bottom:10px; background:#fff; color:var(--ink);
+  }
+  .modal-err{ color:#B24949; font-size:13px; margin-bottom:10px; min-height:16px; }
+  .btn-row{ display:flex; gap:10px; margin-top:6px; }
+  .btn-secondary{
+    flex:1; padding:12px; border-radius:10px; background:rgba(27,33,66,0.06); font-weight:600; font-size:14px; color:var(--ink);
+  }
+  .btn-primary{
+    flex:1; padding:12px; border-radius:10px; background:var(--ink); color:var(--parchment); font-weight:600; font-size:14px;
+  }
+
   /* ---------- Test page ---------- */
   .test-header{
     position:fixed; top:0; left:0; right:0; z-index:20;
@@ -208,6 +237,15 @@
     font-size:46px; margin-top:14px; color:var(--parchment);
   }
   .ggi-score.top{ color:var(--gold-bright); }
+  .ggi-refs{
+    position:relative; z-index:1; font-size:12.5px; color:rgba(246,241,231,0.55);
+    margin-top:14px; letter-spacing:0.01em; line-height:1.7;
+    text-align:left; max-width:400px; margin-left:auto; margin-right:auto;
+  }
+  .ggi-refs.top{ color:rgba(224,188,124,0.8); }
+  .ref-line{ margin-bottom:10px; }
+  .ref-line:last-child{ margin-bottom:0; }
+  .ref-cite{ display:block; margin-top:2px; font-weight:700; opacity:0.85; }
   .low-card{
     text-align:center; padding:30px 24px; margin-bottom:34px;
     border-top:1px solid var(--ink-line); border-bottom:1px solid var(--ink-line);
@@ -215,6 +253,7 @@
   .low-card .lead-text{ font-size:13px; color:var(--sage); }
   .low-card .ggi-name{ font-size:22px; color:var(--sage); margin-top:6px; }
   .low-card .ggi-score{ font-size:30px; color:var(--sage); margin-top:8px;}
+  .low-card .ggi-refs{ color:rgba(139,154,124,0.75); }
 
   .others-title{
     font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:var(--dusk);
@@ -243,6 +282,7 @@
     <div class="rule"></div>
     <button class="btn-gold" id="btn-start">開始測試</button>
   </div>
+  <button class="admin-entry" id="btn-admin-entry">Admin</button>
 </div>
 
 <!-- TEST -->
@@ -267,6 +307,19 @@
   </div>
 </div>
 
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-bg" id="admin-login" style="display:none;">
+  <div class="modal-card">
+    <h3>Admin Access</h3>
+    <input type="password" class="modal-input" id="admin-pw" placeholder="Enter password">
+    <div class="modal-err" id="admin-err"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" id="admin-cancel">Cancel</button>
+      <button class="btn-primary" id="admin-login-btn">Log In</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   // =====================================================================
@@ -288,47 +341,49 @@
   // =====================================================================
   const GGI_DATA = {
     ggis: [
-      { name: '神的創造', statements: [
-        { text: '神說：「我們要照著我們的形象，按著我們的樣式造人」', ref: '創世記 1:26' },
-        { text: '神看他所造的一切都很好。', ref: '創世記 1:31' },
-        { text: '我們原是神所作成的，是在基督耶穌裡創造的，為的是要我們行各樣的善事，就是神預先所安排的。', ref: '以弗所書2:10' },
+      { name: '神的奇妙創造', statements: [
+        { text: '神照著自己的形象創造人；就是照著神的形象創造了他；他所創造的有男有女。神看他所造的一切都很好。', ref: '創世記 1:27,31' },
         { text: '我要稱謝你，因為我的受造奇妙可畏；你的作為奇妙，這是我深深知道的。', ref: '詩篇 139:14' },
-        { text: '若有人在基督裡，他就是新造的人，舊事已過，都變成新的了。', ref: '哥林多後書 5:17' },
       ]},
       { name: '神的兒女', statements: [
-        { text: '你們因著信，在基督耶穌裡都作了神的兒子。', ref: '加拉太書3:26' },
-        { text: '你看父賜給我們是何等的慈愛，使我們得稱為神的兒女；我們也真是他的兒女。', ref: '約翰一書 3:1' },
         { text: '凡接待他的，就是信他名的人，他就賜他們權柄作神的兒女。', ref: '約翰福音 1:12' },
-        { text: '聖靈與我們的心同證我們是神的兒女。', ref: '羅馬書 8:16' },
-        { text: '你們既為兒子，神就差他兒子的靈進入你們的心，呼叫：『阿爸！父！』', ref: '加拉太書 4:6' },
+        { text: '你們因著信，在基督耶穌裡都作了神的兒子。', ref: '加拉太書3:26' },
       ]},
       { name: '神的後嗣', statements: [
         { text: '聖靈親自和我們的靈一同證明我們是神的兒女。既然是兒女，就是後嗣；是神的後嗣，也和基督一同作後嗣。我們既然和他一同受苦，就必和他一同得榮耀。', ref: '羅馬書 8:17' },
-        { text: '可見，從此以後，你不是奴僕，乃是兒子了；既是兒子，就靠著神為後嗣。', ref: '加拉太書 4:7' },
-        { text: '我們也在他裡面得了基業，這原是那位隨己意行、做萬事的神照著他旨意所預定作的。', ref: '以弗所書 1:11' },
-        { text: '好叫我們因他的恩得稱為義，可以憑著永生的盼望成為後嗣。', ref: '提多書 3:7' },
-        { text: '……藉耶穌基督從死裡復活，重生了我們，叫我們有活潑的盼望，可以得著不能朽壞、不能玷污、不能衰殘、為你們存留在天上的基業。', ref: '彼得前書 1:3-4' },
+        { text: '這樣，你不再是奴僕，而是兒子；既然是兒子，就靠著神承受產業了。', ref: '加拉太書 4:7' },
       ]},
-      { name: '神所揀選的，是聖潔、蒙愛的人', statements: [
-        { text: '所以，你們既然是神所揀選的，是聖潔、蒙愛的人，就要存憐憫的心腸、恩慈、謙卑、溫柔和忍耐。', ref: '歌羅西書 3:12' },
-        { text: '我們主耶穌基督的父神是應當稱頌的。他在基督裡，曾經把天上各種屬靈的福分賜給我們：就如創立世界以前，他在基督裡揀選了我們，使我們因著愛，在他面前成為聖潔，沒有瑕疵。', ref: '以弗所書 1:3-4' },
-        { text: '惟有你們是被揀選的族類，是有君尊的祭司，是聖潔的國度，是屬神的子民，要叫你們宣揚那召你們出黑暗入奇妙光明者的美德。', ref: '彼得前書 2:9' },
-        { text: '主所愛的弟兄們哪，我們本該常為你們感謝神；因為他從起初揀選了你們，叫你們因信真道，又被聖靈感動，成為聖潔，能以得救。', ref: '帖撒羅尼迦後書 2:13' },
+      { name: '神所揀選的子民', statements: [
         { text: '因為你歸耶和華你神為聖潔的民；耶和華你神從地上的萬民中揀選你，特作自己的子民。', ref: '申命記 7:6' },
+        { text: '不是你們揀選了我，而是我揀選了你們，並且分派你們去結果子，就是結常存的果子，使你們奉我的名，無論向父求甚麼，他必定賜給你們。', ref: '約翰福音 15:16' },
       ]},
-      { name: '自由、蒙恩的罪人', statements: [
+      { name: '蒙恩的罪人', statements: [
         { text: '因為人人都犯了罪，虧缺了神的榮耀，但他們卻因著神的恩典，藉著在基督耶穌裡的救贖，就白白地稱義。', ref: '羅馬書 3:23-24' },
-        { text: '基督釋放了我們，為了要使我們得自由。所以你們要站立得穩，不要再被奴役的軛控制。', ref: '加拉太書 5:1' },
-        { text: '因此，你們應當彼此接納，就像基督接納了你們一樣，使榮耀歸於神。', ref: '羅馬書 15:7' },
-        { text: '你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。', ref: '以弗所書 2:8-9' },
-        { text: '罪必不能作你們的主，因你們不在律法之下，乃在恩典之下。', ref: '羅馬書 6:14' },
+        { text: '耶穌說：「我實實在在告訴你們，凡犯罪的都是罪的奴隸。奴隸不能永遠住在家裡，唯有兒子才可以永遠住在家裡。所以，神的兒子若使你們自由，你們就真的得自由了。」', ref: '約翰福音 8:34-36' },
       ]},
       { name: '基督的使者', statements: [
-        { text: '因此，我們就是基督的使者，神藉著我們勸告世人。我們代替基督請求你們：跟神和好吧！', ref: '哥林多後書 5:20' },
         { text: '所以，你們要去，使萬民作我的門徒，奉父、子、聖靈的名給他們施洗。凡我所吩咐你們的，都教訓他們遵守，我就常與你們同在，直到世界的末了。', ref: '馬太福音 28:19-20' },
-        { text: '但聖靈降臨在你們身上，你們就必得著能力，並要在耶路撒冷、猶太全地，和撒馬利亞，直到地極，作我的見證。', ref: '使徒行傳 1:8' },
-        { text: '我為這福音的奧秘作了帶鎖鍊的使者，並放膽講論，照著當盡的本分放膽傳講。', ref: '以弗所書 6:20' },
-        { text: '你們的光也當這樣照在人前，叫他們看見你們的好行為，便將榮耀歸給你們在天上的父。', ref: '馬太福音 5:16' },
+        { text: '因此，我們就是基督的使者，神藉著我們勸告世人。我們代替基督請求你們：跟神和好吧！', ref: '哥林多後書 5:20' },
+      ]},
+      { name: '神的僕人', statements: [
+        { text: '無論你們作甚麼，都要從心裡去作，像是為主作的，不是為人作的，因為你們知道，你們一定會從主那裡得到基業為賞賜。你們應當服事主基督', ref: '歌羅西書 3:23-24' },
+        { text: '「你們知道各國都有被尊為元首的統治他們，也有官長管轄他們。但你們中間卻不要這樣；誰想在你們中間為大的，就要作你們的僕役，誰想在你們中間為首的，就要作大家的奴僕。因為人子來，不是要受人服事，而是要服事人，並且要捨命，作許多人的贖價。」', ref: '馬可福音 10:42-45' },
+      ]},
+      { name: '活生生的見證', statements: [
+        { text: '你們是世上的光。建在山上的城是無法隱藏的；人點了燈，不會放在量器底下，而是放在燈臺上，就照亮一家人。照樣，你們的光也應當照在人前，讓他們看見你們的好行為，又頌讚你們在天上的父。', ref: '馬太福音 5:14-16' },
+        { text: '你們就是我們的薦信，寫在我們的心裡，是眾人所認識所誦讀的，顯明你們自己是基督的書信，是藉著我們寫成的，不是用墨，而是用永活神的靈寫的；不是寫在石版上，而是寫在心版上。', ref: '哥林多後書 3:2-3' },
+      ]},
+      { name: '新造的人', statements: [
+        { text: '如果有人在基督裡，他就是新造的人，舊事已經過去，你看，都變成新的了！', ref: '哥林多後書 5:17' },
+        { text: '我已經與基督同釘十字架；現在活著的，不再是我，而是基督活在我裡面；如今在肉身中活著的我，是因信神的兒子而活的；他愛我，為我捨己。', ref: '加拉太書 2:20' },
+      ]},
+      { name: '門徒', statements: [
+        { text: '你們若住在我裡面，我的話也留在你們裡面；無論你們想要甚麼，祈求，就給你們成就。這樣，你們結出很多果子，我父就因此得榮耀，你們也就是我的門徒了。', ref: '約翰福音 15:7-8' },
+        { text: '耶穌又對眾人說：「如果有人願意跟從我，就當捨己，天天背起他的十字架來跟從我。」', ref: '路加福音 9:23' },
+      ]},
+      { name: '弟兄姊妹', statements: [
+        { text: '我給你們一條新命令，就是要你們彼此相愛；我怎樣愛你們，你們也要怎樣彼此相愛。如果你們彼此相愛，眾人就會認出你們是我的門徒了。', ref: '約翰福音 13:34-35' },
+        { text: '他們天天同心在殿裡恆切地聚集，一家一家地擘餅，存著歡樂和誠懇的心用飯，又讚美神，並且得到全民的喜愛。主將得救的人，天天加給教會。', ref: '使徒行傳 2:46-47' },
       ]},
     ]
   };
@@ -364,6 +419,8 @@
 
   // ---------- Test flow ----------
   let currentIndex = 0;
+  const ADMIN_PW = 'Energetic+Youthful';
+  let adminSkipMode = false;
 
   // Measures the real rendered height of the fixed top/bottom bars and
   // exposes them as CSS variables, so the statement layer in between can
@@ -390,6 +447,11 @@
     renderCurrentCard();
     showView('view-test');
     syncTestLayout();
+  }
+
+  function startTestAsAdmin(){
+    adminSkipMode = true;
+    startTest();
   }
 
   function renderCurrentCard(){
@@ -439,7 +501,7 @@
 
     $('btn-prev').textContent = isFirst ? '← 返回首頁' : '← 上一題';
     $('btn-next').textContent = isLast ? '完成' : '下一題 →';
-    $('btn-next').disabled = !touched[sid];
+    $('btn-next').disabled = !adminSkipMode && !touched[sid];
   }
 
   function goPrev(){
@@ -482,13 +544,20 @@
     return d.innerHTML;
   }
 
+  function renderVerses(verses){
+    return verses.map(v => `
+      <div class="ref-line">${escapeHtml(v.text)}<span class="ref-cite">${escapeHtml(v.ref)}</span></div>
+    `).join('');
+  }
+
   // ---------- Scoring ----------
   function computeResults(){
     const rows = ggiData.ggis.map(g => {
       const scores = g.statements.map(s => answers[s.id] != null ? answers[s.id] : 5);
       const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
       const max = Math.max(...scores);
-      return { id: g.id, name: g.name, avg, max };
+      const verses = g.statements.map(s => ({ text: s.text, ref: s.ref }));
+      return { id: g.id, name: g.name, avg, max, verses };
     });
 
     function pickExtreme(candidatesSortFn){
@@ -537,12 +606,14 @@
         <div class="lead-text top">你最有共鳴的天國身份是</div>
         <div class="ggi-name top">${escapeHtml(highest.name)}</div>
         <div class="ggi-score top">${highest.avg.toFixed(1)}</div>
+        <div class="ggi-refs top">${renderVerses(highest.verses)}</div>
       </div>
 
       <div class="low-card">
         <div class="lead-text">你最冇共鳴的天國身份是</div>
         <div class="ggi-name">${escapeHtml(lowest.name)}</div>
         <div class="ggi-score">${lowest.avg.toFixed(1)}</div>
+        <div class="ggi-refs">${renderVerses(lowest.verses)}</div>
       </div>
 
       ${others.length ? `
@@ -564,10 +635,32 @@
     $('btn-retake').addEventListener('click', () => showView('view-landing'));
   }
 
+  // ---------- Admin (skip-through mode) ----------
+  function openAdminLogin(){
+    $('admin-pw').value = '';
+    $('admin-err').textContent = '';
+    $('admin-login').style.display = 'flex';
+    setTimeout(() => $('admin-pw').focus(), 50);
+  }
+  function closeAdminLogin(){ $('admin-login').style.display = 'none'; }
+
+  function tryAdminLogin(){
+    if ($('admin-pw').value === ADMIN_PW){
+      closeAdminLogin();
+      startTestAsAdmin();
+    } else {
+      $('admin-err').textContent = 'Incorrect password. Please try again.';
+    }
+  }
+
   // ---------- Wire up ----------
-  $('btn-start').addEventListener('click', startTest);
+  $('btn-start').addEventListener('click', () => { adminSkipMode = false; startTest(); });
   $('btn-prev').addEventListener('click', goPrev);
   $('btn-next').addEventListener('click', goNext);
+  $('btn-admin-entry').addEventListener('click', openAdminLogin);
+  $('admin-cancel').addEventListener('click', closeAdminLogin);
+  $('admin-login-btn').addEventListener('click', tryAdminLogin);
+  $('admin-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryAdminLogin(); });
 })();
 </script>
 </body>
