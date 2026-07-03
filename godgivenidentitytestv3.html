@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>十字人格測試</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2142;
+    --ink-deep:#12152B;
+    --parchment:#F6F1E7;
+    --parchment-dim:#EDE6D6;
+    --gold:#C9A15A;
+    --gold-bright:#E0BC7C;
+    --dusk:#5B6491;
+    --sage:#8B9A7C;
+    --sage-dim:#5F6E56;
+    --ink-line: rgba(246,241,231,0.14);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Noto Sans TC', sans-serif;
+    background:var(--parchment);
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  .view{display:none; min-height:100vh;}
+  .view.active{display:block;}
+  h1,h2,h3{font-family:'Noto Serif TC', serif; margin:0;}
+  button{font-family:inherit; cursor:pointer; border:none; background:none;}
+
+  /* ---------- Sky / dusk backdrop (landing + results) ---------- */
+  .sky{
+    position:relative;
+    min-height:100vh;
+    background: radial-gradient(ellipse at 50% -10%, #2A335E 0%, var(--ink) 55%, var(--ink-deep) 100%);
+    color:var(--parchment);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:32px 24px 48px;
+    text-align:center;
+  }
+  .stars{
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(rgba(246,241,231,0.55) 1px, transparent 1.4px),
+      radial-gradient(rgba(246,241,231,0.35) 1px, transparent 1.4px);
+    background-size: 90px 90px, 140px 140px;
+    background-position: 0 0, 45px 70px;
+    opacity:0.5;
+    pointer-events:none;
+  }
+  .glow-dot{
+    position:absolute; border-radius:50%;
+    background: radial-gradient(circle, rgba(224,188,124,0.55) 0%, rgba(224,188,124,0) 70%);
+    pointer-events:none;
+  }
+
+  /* ---------- Landing ---------- */
+  .eyebrow{
+    letter-spacing:0.35em; font-size:11px; font-weight:500; color:var(--gold-bright);
+    text-transform:uppercase; margin-bottom:18px;
+  }
+  .landing h1{
+    font-size:44px; font-weight:900; color:var(--parchment); line-height:1.25;
+    letter-spacing:0.04em;
+  }
+  .landing .sub{
+    margin-top:14px; font-size:16px; color:var(--dusk-light,#B9BEDD); font-weight:500;
+    letter-spacing:0.02em;
+  }
+  .rule{
+    width:56px; height:1px; background:var(--gold); margin:28px 0; opacity:0.8;
+  }
+  .btn-gold{
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color:var(--ink-deep);
+    font-weight:700; font-size:16px;
+    padding:16px 46px; border-radius:999px;
+    box-shadow:0 8px 24px rgba(201,161,90,0.35);
+    letter-spacing:0.05em;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-gold:active{transform:scale(0.97); box-shadow:0 4px 14px rgba(201,161,90,0.3);}
+
+  /* ---------- Test page ---------- */
+  .test-header{
+    position:sticky; top:0; z-index:10;
+    background:var(--parchment); border-bottom:1px solid rgba(27,33,66,0.08);
+    padding:16px 20px 12px;
+  }
+  .progress-track{
+    height:4px; background:rgba(27,33,66,0.08); border-radius:4px; overflow:hidden; margin-top:10px;
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+    width:0%; transition:width .25s ease;
+  }
+  .progress-label{
+    font-size:12px; color:var(--dusk); font-weight:500; letter-spacing:0.03em;
+  }
+  .test-list{ padding:20px 20px 110px; max-width:560px; margin:0 auto; }
+  .stmt-card{
+    background:#fff; border:1px solid rgba(27,33,66,0.07);
+    border-radius:18px; padding:26px 20px 24px; margin-bottom:16px;
+  }
+  .stmt-text{
+    font-size:21px; line-height:1.7; font-weight:600; color:var(--ink);
+    text-align:center; margin-bottom:10px;
+  }
+  .stmt-ref{
+    font-size:14px; font-weight:700; color:var(--gold);
+    text-align:center; letter-spacing:0.03em; margin-bottom:24px;
+  }
+  .slider-row{ display:flex; align-items:center; justify-content:center; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:6px;
+    background:linear-gradient(90deg, var(--sage) 0%, var(--gold) 50%, var(--gold-bright) 100%);
+    outline:none;
+    touch-action: pan-y;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+    background:var(--ink); border:2px solid var(--parchment);
+    box-shadow:0 0 0 1.5px var(--gold);
+    cursor:pointer;
+    transition:width .18s ease, height .18s ease, border-width .18s ease;
+  }
+  input[type=range].touched::-webkit-slider-thumb{
+    width:26px; height:26px; border-width:3px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%;
+    background:var(--ink); border:2px solid var(--parchment);
+    box-shadow:0 0 0 1.5px var(--gold); cursor:pointer;
+    transition:width .18s ease, height .18s ease, border-width .18s ease;
+  }
+  input[type=range].touched::-moz-range-thumb{
+    width:26px; height:26px; border-width:3px;
+  }
+  .tick-row{
+    display:flex; justify-content:space-between; margin-top:8px; padding:0 2px;
+    font-size:11px; color:var(--dusk); font-weight:500;
+  }
+  .slider-hints{
+    display:flex; justify-content:space-between; margin-top:10px;
+    font-size:11px; color:var(--dusk); letter-spacing:0.02em;
+  }
+  .test-footer{
+    position:fixed; left:0; right:0; bottom:0; z-index:10;
+    background:var(--ink); padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .test-footer-inner{ display:flex; gap:10px; width:100%; max-width:520px; }
+  .btn-prev{
+    flex:0 0 auto; background:rgba(246,241,231,0.1); color:var(--parchment);
+    font-weight:600; font-size:15px; padding:14px 18px; border-radius:999px;
+    letter-spacing:0.02em; white-space:nowrap;
+  }
+  .btn-prev:active{ background:rgba(246,241,231,0.18); }
+  .btn-complete{
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color:var(--ink-deep); font-weight:700; font-size:16px;
+    padding:14px 0; flex:1; border-radius:999px;
+    letter-spacing:0.05em;
+  }
+  .btn-complete:disabled{opacity:0.4;}
+
+  /* ---------- Results ---------- */
+  .results-wrap{ padding:56px 22px 60px; max-width:560px; margin:0 auto; position:relative; z-index:1; }
+  .top-card{
+    position:relative; text-align:center; padding:46px 24px 34px; margin-bottom:18px;
+  }
+  .cross-glow{
+    position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    width:300px; height:300px; z-index:0; opacity:0.55;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .cross-glow{ animation: pulse-glow 4.5s ease-in-out infinite; }
+  }
+  @keyframes pulse-glow{
+    0%, 100% { opacity:0.4; transform:translateX(-50%) scale(1); }
+    50% { opacity:0.62; transform:translateX(-50%) scale(1.04); }
+  }
+  .lead-text{
+    position:relative; z-index:1; font-size:15px; font-weight:500; color:var(--parchment);
+    line-height:1.5;
+  }
+  .lead-text.top{ color:var(--gold-bright); }
+  .ggi-name{
+    position:relative; z-index:1; font-size:30px; font-weight:900; color:var(--parchment);
+    line-height:1.35; margin-top:8px;
+  }
+  .ggi-name.top{ color:var(--gold-bright); }
+  .ggi-score{
+    position:relative; z-index:1; font-family:'Noto Serif TC', serif; font-weight:700;
+    font-size:46px; margin-top:14px; color:var(--parchment);
+  }
+  .ggi-score.top{ color:var(--gold-bright); }
+  .low-card{
+    text-align:center; padding:30px 24px; margin-bottom:34px;
+    border-top:1px solid var(--ink-line); border-bottom:1px solid var(--ink-line);
+  }
+  .low-card .lead-text{ font-size:13px; color:var(--sage); }
+  .low-card .ggi-name{ font-size:22px; color:var(--sage); margin-top:6px; }
+  .low-card .ggi-score{ font-size:30px; color:var(--sage); margin-top:8px;}
+
+  .others-title{
+    font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:var(--dusk);
+    text-align:center; margin-bottom:18px; font-weight:500;
+  }
+  .bar-row{ margin-bottom:16px; }
+  .bar-top{ display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px; }
+  .bar-name{ color:var(--parchment); font-weight:500; }
+  .bar-score{ color:var(--gold-bright); font-family:'Noto Serif TC', serif; font-weight:700; }
+  .bar-track{ height:6px; background:rgba(246,241,231,0.12); border-radius:6px; overflow:hidden;}
+  .bar-fill{ height:100%; background:linear-gradient(90deg, var(--dusk), var(--gold)); border-radius:6px; }
+
+  .link-row{ text-align:center; margin-top:44px; }
+  .link-btn{ color:rgba(246,241,231,0.55); font-size:13px; letter-spacing:0.04em; padding:10px; }
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div class="view active" id="view-landing">
+  <div class="sky">
+    <div class="glow-dot" style="width:220px;height:220px; top:8%; left:60%;"></div>
+    <div class="glow-dot" style="width:140px;height:140px; top:60%; left:8%;"></div>
+    <h1>十字人格測試</h1>
+    <div class="sub">認識你的天國身份</div>
+    <div class="rule"></div>
+    <button class="btn-gold" id="btn-start">開始測試</button>
+  </div>
+</div>
+
+<!-- TEST -->
+<div class="view" id="view-test">
+  <div class="test-header">
+    <div class="progress-label" id="progress-label">第 1 題，共 0 題</div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+  <div class="test-list" id="test-list"></div>
+  <div class="test-footer">
+    <div class="test-footer-inner">
+      <button class="btn-prev" id="btn-prev">← 上一題</button>
+      <button class="btn-complete" id="btn-next" disabled>下一題 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="view" id="view-results">
+  <div class="sky" style="justify-content:flex-start; padding-top:0;">
+    <div class="results-wrap" id="results-wrap"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // =====================================================================
+  // GGI DATA — edit this block to add, remove, or change identities
+  // and their statements. This is the ONLY place you need to touch.
+  //
+  // Structure:
+  //   { name: 'Identity Name', statements: [
+  //       { text: 'Statement text', ref: 'Scripture reference' },
+  //       ...
+  //   ]}
+  //
+  // - To add a new identity: copy a whole { name: ..., statements: [...] }
+  //   block and paste it before the closing `]` below, then edit it.
+  // - To remove an identity: delete its whole { ... } block.
+  // - To add/remove a statement: add or delete a { text:..., ref:... }
+  //   line inside an identity's `statements` array.
+  // - The `ref` (scripture reference) is automatically bolded when shown.
+  // =====================================================================
+  const GGI_DATA = {
+    ggis: [
+      { name: '神的創造', statements: [
+        { text: '神說：「我們要照著我們的形象，按著我們的樣式造人」', ref: '創世記 1:26' },
+        { text: '神看他所造的一切都很好。', ref: '創世記 1:31' },
+        { text: '我們原是神所作成的，是在基督耶穌裡創造的，為的是要我們行各樣的善事，就是神預先所安排的。', ref: '以弗所書2:10' },
+        { text: '我要稱謝你，因為我的受造奇妙可畏；你的作為奇妙，這是我深深知道的。', ref: '詩篇 139:14' },
+        { text: '若有人在基督裡，他就是新造的人，舊事已過，都變成新的了。', ref: '哥林多後書 5:17' },
+      ]},
+      { name: '神的兒女', statements: [
+        { text: '你們因著信，在基督耶穌裡都作了神的兒子。', ref: '加拉太書3:26' },
+        { text: '你看父賜給我們是何等的慈愛，使我們得稱為神的兒女；我們也真是他的兒女。', ref: '約翰一書 3:1' },
+        { text: '凡接待他的，就是信他名的人，他就賜他們權柄作神的兒女。', ref: '約翰福音 1:12' },
+        { text: '聖靈與我們的心同證我們是神的兒女。', ref: '羅馬書 8:16' },
+        { text: '你們既為兒子，神就差他兒子的靈進入你們的心，呼叫：『阿爸！父！』', ref: '加拉太書 4:6' },
+      ]},
+      { name: '神的後嗣', statements: [
+        { text: '聖靈親自和我們的靈一同證明我們是神的兒女。既然是兒女，就是後嗣；是神的後嗣，也和基督一同作後嗣。我們既然和他一同受苦，就必和他一同得榮耀。', ref: '羅馬書 8:17' },
+        { text: '可見，從此以後，你不是奴僕，乃是兒子了；既是兒子，就靠著神為後嗣。', ref: '加拉太書 4:7' },
+        { text: '我們也在他裡面得了基業，這原是那位隨己意行、做萬事的神照著他旨意所預定作的。', ref: '以弗所書 1:11' },
+        { text: '好叫我們因他的恩得稱為義，可以憑著永生的盼望成為後嗣。', ref: '提多書 3:7' },
+        { text: '……藉耶穌基督從死裡復活，重生了我們，叫我們有活潑的盼望，可以得著不能朽壞、不能玷污、不能衰殘、為你們存留在天上的基業。', ref: '彼得前書 1:3-4' },
+      ]},
+      { name: '神所揀選的，是聖潔、蒙愛的人', statements: [
+        { text: '所以，你們既然是神所揀選的，是聖潔、蒙愛的人，就要存憐憫的心腸、恩慈、謙卑、溫柔和忍耐。', ref: '歌羅西書 3:12' },
+        { text: '我們主耶穌基督的父神是應當稱頌的。他在基督裡，曾經把天上各種屬靈的福分賜給我們：就如創立世界以前，他在基督裡揀選了我們，使我們因著愛，在他面前成為聖潔，沒有瑕疵。', ref: '以弗所書 1:3-4' },
+        { text: '惟有你們是被揀選的族類，是有君尊的祭司，是聖潔的國度，是屬神的子民，要叫你們宣揚那召你們出黑暗入奇妙光明者的美德。', ref: '彼得前書 2:9' },
+        { text: '主所愛的弟兄們哪，我們本該常為你們感謝神；因為他從起初揀選了你們，叫你們因信真道，又被聖靈感動，成為聖潔，能以得救。', ref: '帖撒羅尼迦後書 2:13' },
+        { text: '因為你歸耶和華你神為聖潔的民；耶和華你神從地上的萬民中揀選你，特作自己的子民。', ref: '申命記 7:6' },
+      ]},
+      { name: '自由、蒙恩的罪人', statements: [
+        { text: '因為人人都犯了罪，虧缺了神的榮耀，但他們卻因著神的恩典，藉著在基督耶穌裡的救贖，就白白地稱義。', ref: '羅馬書 3:23-24' },
+        { text: '基督釋放了我們，為了要使我們得自由。所以你們要站立得穩，不要再被奴役的軛控制。', ref: '加拉太書 5:1' },
+        { text: '因此，你們應當彼此接納，就像基督接納了你們一樣，使榮耀歸於神。', ref: '羅馬書 15:7' },
+        { text: '你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。', ref: '以弗所書 2:8-9' },
+        { text: '罪必不能作你們的主，因你們不在律法之下，乃在恩典之下。', ref: '羅馬書 6:14' },
+      ]},
+      { name: '基督的使者', statements: [
+        { text: '因此，我們就是基督的使者，神藉著我們勸告世人。我們代替基督請求你們：跟神和好吧！', ref: '哥林多後書 5:20' },
+        { text: '所以，你們要去，使萬民作我的門徒，奉父、子、聖靈的名給他們施洗。凡我所吩咐你們的，都教訓他們遵守，我就常與你們同在，直到世界的末了。', ref: '馬太福音 28:19-20' },
+        { text: '但聖靈降臨在你們身上，你們就必得著能力，並要在耶路撒冷、猶太全地，和撒馬利亞，直到地極，作我的見證。', ref: '使徒行傳 1:8' },
+        { text: '我為這福音的奧秘作了帶鎖鍊的使者，並放膽講論，照著當盡的本分放膽傳講。', ref: '以弗所書 6:20' },
+        { text: '你們的光也當這樣照在人前，叫他們看見你們的好行為，便將榮耀歸給你們在天上的父。', ref: '馬太福音 5:16' },
+      ]},
+    ]
+  };
+
+  // Assign stable ids so results/scoring logic can key off them.
+  const ggiData = {
+    ggis: GGI_DATA.ggis.map((g, gi) => ({
+      id: 'ggi' + gi,
+      name: g.name,
+      statements: g.statements.map((s, si) => ({ id: 'ggi' + gi + '_s' + si, text: s.text, ref: s.ref }))
+    }))
+  };
+
+  let testItems = [];      // shuffled flattened statements for this test attempt
+  let answers = {};        // statementId -> value (1-10)
+  let touched = {};         // statementId -> true if user moved slider
+
+  const $ = (id) => document.getElementById(id);
+  function showView(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    $(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ---------- Test flow ----------
+  let currentIndex = 0;
+
+  function startTest(){
+    const flat = [];
+    ggiData.ggis.forEach(g => {
+      g.statements.forEach(s => flat.push({ statementId: s.id, text: s.text, ref: s.ref, ggiId: g.id }));
+    });
+    testItems = shuffle(flat);
+    answers = {};
+    touched = {};
+    currentIndex = 0;
+    testItems.forEach(it => answers[it.statementId] = 5);
+    renderCurrentCard();
+    showView('view-test');
+  }
+
+  function renderCurrentCard(){
+    const it = testItems[currentIndex];
+    const list = $('test-list');
+    list.innerHTML = `
+      <div class="stmt-card">
+        <div class="stmt-text">${escapeHtml(it.text)}</div>
+        <div class="stmt-ref">${escapeHtml(it.ref)}</div>
+        <div class="slider-row">
+          <input type="range" min="1" max="10" step="1" value="${answers[it.statementId]}"
+            data-sid="${it.statementId}" class="slider-input${touched[it.statementId] ? ' touched' : ''}">
+        </div>
+        <div class="tick-row">${Array.from({length:10}).map((_,i) => `<span>${i+1}</span>`).join('')}</div>
+        <div class="slider-hints"><span>冇共鳴</span><span>有共鳴</span></div>
+      </div>
+    `;
+
+    const inp = list.querySelector('.slider-input');
+    inp.addEventListener('input', (e) => {
+      const sid = e.target.getAttribute('data-sid');
+      const val = parseInt(e.target.value, 10);
+      answers[sid] = val;
+      touched[sid] = true;
+      e.target.classList.add('touched');
+      updateNavButtons();
+    });
+    attachScrollGuard(inp);
+
+    updateProgress();
+    updateNavButtons();
+    window.scrollTo(0,0);
+  }
+
+  function updateProgress(){
+    const total = testItems.length;
+    $('progress-label').textContent = `第 ${currentIndex+1} 題，共 ${total} 題`;
+    $('progress-fill').style.width = ((currentIndex+1)/total*100) + '%';
+  }
+
+  function updateNavButtons(){
+    const total = testItems.length;
+    const isFirst = currentIndex === 0;
+    const isLast = currentIndex === total - 1;
+    const sid = testItems[currentIndex].statementId;
+
+    $('btn-prev').textContent = isFirst ? '← 返回首頁' : '← 上一題';
+    $('btn-next').textContent = isLast ? '完成' : '下一題 →';
+    $('btn-next').disabled = !touched[sid];
+  }
+
+  function goPrev(){
+    if (currentIndex === 0){
+      showView('view-landing');
+    } else {
+      currentIndex--;
+      renderCurrentCard();
+    }
+  }
+
+  function goNext(){
+    const total = testItems.length;
+    if (currentIndex === total - 1){
+      renderResults();
+      showView('view-results');
+    } else {
+      currentIndex++;
+      renderCurrentCard();
+    }
+  }
+
+  // Disambiguates "scroll the page" from "drag the slider" on touch devices.
+  // If the first few pixels of movement are more vertical than horizontal,
+  // treat it as a scroll: undo any accidental value change and back off,
+  // letting the page scroll normally instead of dragging the thumb.
+  function attachScrollGuard(inp){
+    const sid = inp.getAttribute('data-sid');
+    let startX = 0, startY = 0, decided = null, wasTouchedBefore = false, prevValue = null;
+
+    function activate(){
+      touched[sid] = true;
+      inp.classList.add('touched');
+      updateNavButtons();
+    }
+
+    inp.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      decided = null;
+      wasTouchedBefore = !!touched[sid];
+      prevValue = inp.value;
+      activate(); // a plain tap on the thumb should count as an answer, no drag required
+    }, { passive: true });
+
+    inp.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+
+      if (decided === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
+        decided = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'drag' : 'scroll';
+        if (decided === 'scroll'){
+          inp.value = prevValue;
+          if (!wasTouchedBefore){
+            delete touched[sid];
+            inp.classList.remove('touched');
+            updateNavButtons();
+          }
+        }
+      }
+      if (decided === 'scroll'){
+        inp.value = prevValue;
+      }
+    }, { passive: true });
+
+    // Mouse/trackpad support: a plain click also activates immediately.
+    inp.addEventListener('mousedown', activate);
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---------- Scoring ----------
+  function computeResults(){
+    const rows = ggiData.ggis.map(g => {
+      const scores = g.statements.map(s => answers[s.id] != null ? answers[s.id] : 5);
+      const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
+      const max = Math.max(...scores);
+      return { id: g.id, name: g.name, avg, max };
+    });
+
+    function pickExtreme(candidatesSortFn){
+      const sorted = rows.slice().sort(candidatesSortFn);
+      const bestAvg = sorted[0].avg;
+      let tied = sorted.filter(r => Math.abs(r.avg - bestAvg) < 1e-9);
+      if (tied.length > 1){
+        const bestMax = Math.max(...tied.map(r => r.max));
+        tied = tied.filter(r => r.max === bestMax);
+      }
+      if (tied.length > 1){
+        return tied[Math.floor(Math.random() * tied.length)];
+      }
+      return tied[0];
+    }
+
+    const highest = pickExtreme((a,b) => b.avg - a.avg);
+    const lowest = pickExtreme((a,b) => a.avg - b.avg);
+
+    const others = rows.filter(r => r.id !== highest.id && r.id !== lowest.id)
+                        .sort((a,b) => b.avg - a.avg);
+
+    return { highest, lowest, others };
+  }
+
+  function renderResults(){
+    const { highest, lowest, others } = computeResults();
+    const wrap = $('results-wrap');
+    wrap.innerHTML = `
+      <div class="top-card">
+        <svg class="cross-glow" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <radialGradient id="crossGradient" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#E0BC7C" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#E0BC7C" stop-opacity="0.15" />
+            </radialGradient>
+            <filter id="crossBlur" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" />
+            </filter>
+          </defs>
+          <g filter="url(#crossBlur)">
+            <rect x="88" y="16" width="24" height="176" rx="6" fill="url(#crossGradient)" />
+            <rect x="32" y="62" width="136" height="24" rx="6" fill="url(#crossGradient)" />
+          </g>
+        </svg>
+        <div class="lead-text top">你最有共鳴的天國身份是</div>
+        <div class="ggi-name top">${escapeHtml(highest.name)}</div>
+        <div class="ggi-score top">${highest.avg.toFixed(1)}</div>
+      </div>
+
+      <div class="low-card">
+        <div class="lead-text">你最冇共鳴的天國身份是</div>
+        <div class="ggi-name">${escapeHtml(lowest.name)}</div>
+        <div class="ggi-score">${lowest.avg.toFixed(1)}</div>
+      </div>
+
+      ${others.length ? `
+      <div class="others-title">其他天國身份</div>
+      ${others.map(o => `
+        <div class="bar-row">
+          <div class="bar-top">
+            <span class="bar-name">${escapeHtml(o.name)}</span>
+            <span class="bar-score">${o.avg.toFixed(1)}</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${o.avg/10*100}%;"></div></div>
+        </div>
+      `).join('')}` : ''}
+
+      <div class="link-row">
+        <button class="link-btn" id="btn-retake">重新測試 →</button>
+      </div>
+    `;
+    $('btn-retake').addEventListener('click', () => showView('view-landing'));
+  }
+
+  // ---------- Wire up ----------
+  $('btn-start').addEventListener('click', startTest);
+  $('btn-prev').addEventListener('click', goPrev);
+  $('btn-next').addEventListener('click', goNext);
+})();
+</script>
+</body>
+</html>
