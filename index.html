@@ -546,7 +546,7 @@
 
   function renderVerses(verses){
     return verses.map(v => `
-      <div class="ref-line">${escapeHtml(v.text)}<span class="ref-cite">${escapeHtml(v.ref)}</span></div>
+      <div class="ref-line">${escapeHtml(v.text)}<span class="ref-cite">${escapeHtml(v.ref)} · 你的評分 ${v.score}</span></div>
     `).join('');
   }
 
@@ -556,7 +556,10 @@
       const scores = g.statements.map(s => answers[s.id] != null ? answers[s.id] : 5);
       const avg = scores.reduce((a,b)=>a+b,0) / scores.length;
       const max = Math.max(...scores);
-      const verses = g.statements.map(s => ({ text: s.text, ref: s.ref }));
+      const verses = g.statements.map(s => ({
+        text: s.text, ref: s.ref,
+        score: answers[s.id] != null ? answers[s.id] : 5
+      }));
       return { id: g.id, name: g.name, avg, max, verses };
     });
 
